@@ -1,0 +1,67 @@
+<!-- pages/index/index.wxml -->
+<view class="page">
+
+  <!-- 统计卡片 -->
+  <view class="stats-bar">
+    <view class="stat-item">
+      <text class="stat-num">{{stats.total}}</text>
+      <text class="stat-label">全部</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num active">{{stats.active}}</text>
+      <text class="stat-label">待完成</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num completed">{{stats.completed}}</text>
+      <text class="stat-label">已完成</text>
+    </view>
+  </view>
+
+  <!-- 筛选标签 -->
+  <view class="filter-bar">
+    <view class="filter-tab {{filter === 'all' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="all">
+      <text>全部</text>
+    </view>
+    <view class="filter-tab {{filter === 'active' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="active">
+      <text>待完成</text>
+    </view>
+    <view class="filter-tab {{filter === 'completed' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="completed">
+      <text>已完成</text>
+    </view>
+    <view class="filter-spacer"></view>
+    <view class="clear-btn" bindtap="onClearCompleted" wx:if="{{stats.completed > 0}}">
+      <text>清除已完成</text>
+    </view>
+  </view>
+
+  <!-- 待办列表 -->
+  <view class="todo-list" wx:if="{{todos.length > 0}}">
+    <block wx:for="{{todos}}" wx:key="id">
+      <todo-item
+        wx:if="{{filter === 'all' || (filter === 'active' && !item.completed) || (filter === 'completed' && item.completed)}}"
+        todo="{{item}}"
+        bind:toggle="onToggle"
+        bind:tap="onTap"
+        bind:edit="onEdit"
+        bind:delete="onDelete"
+      />
+    </block>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <view class="empty-icon-wrap">
+      <view class="empty-icon-inner">📝</view>
+    </view>
+    <text class="empty-title">还没有待办事项</text>
+    <text class="empty-desc">点击右下角按钮添加第一个待办吧</text>
+  </view>
+
+</view>
+
+<!-- 悬浮添加按钮 -->
+<view class="fab-btn" bindtap="onAdd">
+  <text class="fab-icon">+</text>
+</view>

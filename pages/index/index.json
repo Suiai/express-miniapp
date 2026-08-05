@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "待办清单",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "todo-item": "/components/todo-item/todo-item"
+  }
+}

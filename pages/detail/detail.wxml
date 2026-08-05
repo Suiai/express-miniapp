@@ -1,0 +1,77 @@
+<!-- pages/detail/detail.wxml -->
+<view class="page" wx:if="{{todo}}">
+
+  <!-- 状态卡片 -->
+  <view class="status-card {{todo.completed ? 'completed' : ''}}">
+    <view class="status-icon" bindtap="onToggle">
+      <view class="check-circle {{todo.completed ? 'checked' : ''}}">
+        <text wx:if="{{todo.completed}}" class="check-mark">✓</text>
+      </view>
+    </view>
+    <view class="status-text">
+      <text wx:if="{{todo.completed}}">已完成</text>
+      <text wx:else>待完成</text>
+    </view>
+    <text class="status-hint">点击圆圈切换状态</text>
+  </view>
+
+  <!-- 标题卡片 -->
+  <view class="info-card">
+    <view class="info-label">标题</view>
+    <view class="info-content title-content {{todo.completed ? 'completed-text' : ''}}">
+      {{todo.title}}
+    </view>
+  </view>
+
+  <!-- 描述卡片 -->
+  <view class="info-card" wx:if="{{todo.desc}}">
+    <view class="info-label">描述</view>
+    <view class="info-content desc-content {{todo.completed ? 'completed-text' : ''}}">
+      {{todo.desc}}
+    </view>
+  </view>
+
+  <!-- 属性信息 -->
+  <view class="info-card">
+    <view class="attr-row">
+      <text class="attr-label">优先级</text>
+      <view class="attr-value">
+        <text class="priority-tag {{priorityClass}}">{{priorityText}}</text>
+      </view>
+    </view>
+    <view class="attr-divider"></view>
+    <view class="attr-row">
+      <text class="attr-label">截止日期</text>
+      <view class="attr-value">
+        <text wx:if="{{todo.dueDate}}" class="{{overdue ? 'overdue-text' : ''}}">{{todo.dueDate}}</text>
+        <text wx:if="{{overdue}}" class="overdue-badge">已过期</text>
+        <text wx:if="{{!todo.dueDate}}" class="placeholder-text">未设置</text>
+      </view>
+    </view>
+    <view class="attr-divider"></view>
+    <view class="attr-row">
+      <text class="attr-label">创建时间</text>
+      <view class="attr-value">
+        <text>{{createdTime}}</text>
+      </view>
+    </view>
+    <view class="attr-divider"></view>
+    <view class="attr-row">
+      <text class="attr-label">更新时间</text>
+      <view class="attr-value">
+        <text>{{updatedTime}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<!-- 底部操作栏 -->
+<view class="action-bar" wx:if="{{todo}}">
+  <view class="action-btn delete" bindtap="onDelete">
+    <text>删除</text>
+  </view>
+  <view class="action-btn edit" bindtap="onEdit">
+    <text>编辑</text>
+  </view>
+</view>
