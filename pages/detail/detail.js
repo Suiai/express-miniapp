@@ -1,88 +1,128 @@
 // pages/detail/detail.js
-const { storage, formatDate, timeAgo, isOverdue, getPriorityInfo } = require('../../utils/util.js')
+const app = getApp()
 
 Page({
   data: {
-    todo: null,
-    priorityText: '',
-    priorityClass: '',
-    createdTime: '',
-    updatedTime: '',
-    overdue: false
+    food: null,
+    ordering: false
   },
 
   onLoad(options) {
-    if (options.id) {
-      this.loadTodo(options.id)
-    }
+    const { id } = options
+    this.loadFoodDetail(id)
   },
 
-  onShow() {
-    if (this.data.todo) {
-      this.loadTodo(this.data.todo.id)
-    }
-  },
+  /**
+   * 加载菜品详情
+   */
+  loadFoodDetail(id) {
+    const foodList = wx.getStorageSync('foodList') || []
+    const food = foodList.find(item => item.id === id)
 
-  loadTodo(id) {
-    const todo = storage.getById(id)
-    if (!todo) {
-      wx.showToast({
-        title: '待办不存在',
-        icon: 'none'
-      })
+    if (food) {
+      this.setData({ food })
+      wx.setNavigationBarTitle({ title: food.name })
+    } else {
+      wx.showToast({ title: '菜品不存在', icon: 'none' })
       setTimeout(() => wx.navigateBack(), 1000)
-      return
-    }
-
-    const info = getPriorityInfo(todo.priority)
-    this.setData({
-      todo,
-      priorityText: info.text,
-      priorityClass: 'priority-' + todo.priority,
-      createdTime: formatDate(todo.createdAt, 'yyyy-MM-dd HH:mm'),
-      updatedTime: formatDate(todo.updatedAt, 'yyyy-MM-dd HH:mm'),
-      overdue: isOverdue(todo.dueDate) && !todo.completed
-    })
-  },
-
-  /**
-   * 切换完成状态
-   */
-  onToggle() {
-    const updated = storage.toggle(this.data.todo.id)
-    if (updated) {
-      this.loadTodo(this.data.todo.id)
-      wx.vibrateShort({ type: 'light' })
     }
   },
 
   /**
-   * 编辑
+   * 确认点餐 → 发送微信通知
    */
-  onEdit() {
-    wx.navigateTo({
-      url: `/pages/edit/edit?id=${this.data.todo.id}`
-    })
-  },
+  onConfirmOrder() {
+    if (this.data.ordering) return
+    this.setData({ ordering: true })
 
-  /**
-   * 删除
-   */
-  onDelete() {
-    wx.showModal({
-      title: '确认删除',
-      content: '删除后不可恢复，确定要删除吗？',
-      confirmColor: '#FF4D4F',
+    const { name, description, price } = this.data.food
+    const templateId = app.globalData.subscribeTemplateId
+
+    // 1. 请求订阅消息授权
+    wx.requestSubscribeMessage({
+      tmplIds: [templateId],
       success: (res) => {
-        if (res.confirm) {
-          storage.remove(this.data.todo.id)
+        if (res[templateId] === 'accept') {
+          // 用户同意接收通知，调用云函数发送
+          this.sendNotification()
+        } else {
+          this.setData({ ordering: false })
           wx.showToast({
-            title: '已删除',
-            icon: 'success'
+            title: '需要授权才能发送通知',
+            icon: 'none'
           })
-          setTimeout(() => wx.navigateBack(), 800)
         }
+      },
+      fail: (err) => {
+        console.log('订阅消息授权失败', err)
+        // 授权失败时使用模拟通知
+        this.simulateNotification()
       }
     })
+  },
+
+  /**
+   * 通过云函数发送订阅消息通知
+   */
+  sendNotification() {
+    const { name, description, price } = this.data.food
+    const templateId = app.globalData.subscribeTemplateId
+
+    wx.cloud.callFunction({
+      name: 'sendOrderNotify',
+      data: {
+        templateId,
+        name,
+        description: description || '暂无描述',
+        price: price || '0',
+        time: this.formatTime(new Date())
+      },
+      success: (res) => {
+        this.setData({ ordering: false })
+        if (res.result && res.result.success) {
+          wx.showModal({
+            title: '点餐成功',
+            content: '已为您发送微信通知，请到微信消息中查看',
+            showCancel: false,
+            confirmText: '知道了'
+          })
+        } else {
+          // 云函数返回失败，使用模拟通知
+          this.simulateNotification()
+        }
+      },
+      fail: (err) => {
+        console.log('云函数调用失败', err)
+        // 云函数未部署，使用模拟通知
+        this.simulateNotification()
+      }
+    })
+  },
+
+  /**
+   * 模拟通知（云开发未开通时的降级方案）
+   */
+  simulateNotification() {
+    this.setData({ ordering: false })
+    const { name } = this.data.food
+    wx.showModal({
+      title: '点餐成功',
+      content: `您已成功点餐：${name}\n\n（温馨提示：当前为模拟通知。如需接收真实微信通知，请在微信开发者工具中开通云开发并部署云函数，详见 README）`,
+      showCancel: false,
+      confirmText: '知道了',
+      confirmColor: '#ff6b35'
+    })
+  },
+
+  /**
+   * 格式化时间
+   */
+  formatTime(date) {
+    const y = date.getFullYear()
+    const m = (date.getMonth() + 1).toString().padStart(2, '0')
+    const d = date.getDate().toString().padStart(2, '0')
+    const h = date.getHours().toString().padStart(2, '0')
+    const min = date.getMinutes().toString().padStart(2, '0')
+    return `${y}-${m}-${d} ${h}:${min}`
   }
 })

@@ -1,0 +1,30 @@
+<!-- components/food-item/food-item.wxml -->
+<view class="food-item">
+  <!-- 菜品图片 -->
+  <view class="food-item-image">
+    <image
+      wx:if="{{image}}"
+      src="{{image}}"
+      mode="aspectFill"
+      class="food-photo"
+    />
+    <view wx:else class="food-photo-placeholder">
+      <text class="placeholder-icon">🍽️</text>
+    </view>
+  </view>
+
+  <!-- 菜品信息 -->
+  <view class="food-item-info">
+    <view class="food-item-name">{{name}}</view>
+    <view class="food-item-desc">{{description}}</view>
+    <view wx:if="{{price}}" class="food-item-price">
+      <text class="price-symbol">¥</text>
+      <text class="price-num">{{price}}</text>
+    </view>
+  </view>
+
+  <!-- 右侧箭头 -->
+  <view class="food-item-arrow">
+    <text class="arrow-icon">›</text>
+  </view>
+</view>

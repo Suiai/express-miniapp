@@ -1,0 +1,65 @@
+<!-- pages/add/add.wxml -->
+<view class="container">
+  <!-- 照片上传区域 -->
+  <view class="upload-area" bindtap="chooseImage">
+    <block wx:if="{{imageTempPath}}">
+      <image class="preview-image" src="{{imageTempPath}}" mode="aspectFill" />
+      <view class="upload-mask">
+        <text class="upload-mask-text">点击更换照片</text>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="upload-placeholder">
+        <text class="upload-icon">📷</text>
+        <text class="upload-text">上传菜品照片</text>
+        <text class="upload-hint">支持拍照或从相册选择</text>
+      </view>
+    </block>
+  </view>
+
+  <!-- 表单区域 -->
+  <view class="form-section">
+    <view class="form-item">
+      <text class="form-label">菜品名称</text>
+      <input
+        class="form-input"
+        placeholder="请输入菜品名称"
+        placeholder-class="placeholder"
+        value="{{name}}"
+        bindinput="onNameInput"
+        maxlength="20"
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">菜品描述</text>
+      <textarea
+        class="form-textarea"
+        placeholder="请输入菜品描述（口味、食材等）"
+        placeholder-class="placeholder"
+        value="{{description}}"
+        bindinput="onDescInput"
+        maxlength="100"
+        auto-height
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">价格（选填）</text>
+      <input
+        class="form-input"
+        type="digit"
+        placeholder="请输入价格，如 28"
+        placeholder-class="placeholder"
+        value="{{price}}"
+        bindinput="onPriceInput"
+        maxlength="6"
+      />
+    </view>
+  </view>
+
+  <!-- 保存按钮 -->
+  <button class="btn btn-primary btn-block save-btn" bindtap="onSave">
+    保存菜品
+  </button>
+</view>

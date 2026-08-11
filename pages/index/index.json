@@ -1,7 +1,7 @@
 {
-  "navigationBarTitleText": "待办清单",
+  "navigationBarTitleText": "美味点餐",
   "enablePullDownRefresh": true,
   "usingComponents": {
-    "todo-item": "/components/todo-item/todo-item"
+    "food-item": "/components/food-item/food-item"
   }
 }
