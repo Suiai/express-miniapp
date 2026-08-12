@@ -7,13 +7,17 @@ App({
     if (wx.cloud) {
       try {
         wx.cloud.init({
-          // 如需指定环境，填写环境ID：env: 'your-env-id'
+          // DYNAMIC_CURRENT_ENV：自动使用当前小程序关联的云环境
+          // 若仍失败，可替换为控制台的环境ID，如 env: 'cloud1-xxxxxx'
+          env: wx.cloud.DYNAMIC_CURRENT_ENV,
           traceUser: true
         })
         console.log('云开发初始化成功')
       } catch (e) {
         console.error('云开发初始化失败', e)
       }
+    } else {
+      console.error('当前基础库不支持云开发，请升级微信开发者工具')
     }
   },
 
