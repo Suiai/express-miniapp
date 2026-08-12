@@ -35,10 +35,10 @@ exports.main = async (event, context) => {
       // 测试阶段用 developer，正式发布后改为 formal
       miniprogramState: 'developer',
       data: {
-        // 以下 key 为示例，请根据实际模板的关键词名称修改
+        // 根据实际模板的关键词名称调整
         thing1: { value: safeName },      // 菜品名称
         thing2: { value: safeDesc },      // 菜品描述
-        time3: { value: time }            // 下单时间
+        time5: { value: time }            // 下单时间
       }
     })
 
