@@ -9,7 +9,15 @@ const db = cloud.database()
 
 exports.main = async () => {
   try {
-    // 检查是否已有数据
+    // 第一步：确保 foods 集合存在（已存在时会报错，忽略即可）
+    try {
+      await db.createCollection('foods')
+      console.log('集合 foods 创建成功')
+    } catch (e) {
+      console.log('集合已存在或创建失败（可忽略）:', e.errMsg || e)
+    }
+
+    // 第二步：检查是否已有数据
     const countRes = await db.collection('foods').count()
     if (countRes.total > 0) {
       return {
