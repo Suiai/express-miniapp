@@ -1,5 +1,5 @@
 // cloudfunctions/sendOrderNotify/index.js
-// 云函数：发送点餐订阅消息通知
+// 云函数：记录点餐订单 + 发送订阅消息通知
 // 使用前：
 // 1. 在微信公众平台配置订阅消息模板（功能 → 订阅消息 → 添加模板）
 // 2. 将模板ID填入下方 TEMPLATE_ID（与 app.js 中保持一致）
@@ -8,12 +8,14 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
+const db = cloud.database()
+
 // 订阅消息模板ID（与 app.js 中 subscribeTemplateId 保持一致）
 const TEMPLATE_ID = 'C95Rasr4Ky0Gmu-FJRaBzYFHYC25Av_glLmegPTzGcc'
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
-  const { name, description, price, time } = event
+  const { foodId, name, description, price, time } = event
 
   // 校验模板ID是否已配置
   if (!TEMPLATE_ID || TEMPLATE_ID === 'TEMPLATE_ID_REPLACE_ME') {
@@ -27,6 +29,28 @@ exports.main = async (event, context) => {
   const safeDesc = (description || '').substring(0, 20)
   const safeName = (name || '').substring(0, 20)
 
+  // 1. 记录订单到云数据库（云函数管理员身份写入，orders 集合不存在时自动创建）
+  //    开发者可在云开发控制台 → 数据库 → orders 中查看所有新订单
+  try {
+    await db.collection('orders').add({
+      data: {
+        foodId: foodId || '',
+        name: safeName,
+        description: description || '',
+        price: price || '0',
+        orderTime: time || '',
+        openid: OPENID,
+        status: 'pending', // 订单状态：pending 待处理
+        createTime: db.serverDate()
+      }
+    })
+    console.log('订单已记录')
+  } catch (err) {
+    // 订单记录失败不阻断通知发送，仅打印日志
+    console.error('订单记录失败', err)
+  }
+
+  // 2. 发送订阅消息给点餐用户（回执通知）
   try {
     const result = await cloud.openapi.subscribeMessage.send({
       touser: OPENID,

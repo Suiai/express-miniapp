@@ -92,6 +92,7 @@ Page({
       name: 'sendOrderNotify',
       data: {
         templateId,
+        foodId: this.data.food._id,
         name,
         description: description || '暂无描述',
         price: price || '0',
