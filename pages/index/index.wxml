@@ -11,8 +11,8 @@
     <view
       class="food-card-wrapper"
       wx:for="{{foodList}}"
-      wx:key="id"
-      data-id="{{item.id}}"
+      wx:key="_id"
+      data-id="{{item._id}}"
       bindtap="onTapFood"
     >
       <food-item

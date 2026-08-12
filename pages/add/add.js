@@ -4,8 +4,8 @@ Page({
     name: '',
     description: '',
     price: '',
-    image: '',        // base64 图片数据
-    imageTempPath: ''  // 临时路径（预览用）
+    imageTempPath: '',  // 本地临时路径（预览用）
+    saving: false
   },
 
   /**
@@ -30,21 +30,7 @@ Page({
           return
         }
 
-        // 读取为 base64 用于持久化存储
-        try {
-          const fs = wx.getFileSystemManager()
-          const base64 = fs.readFileSync(tempFilePath, 'base64')
-          this.setData({
-            image: `data:image/jpeg;base64,${base64}`,
-            imageTempPath: tempFilePath
-          })
-        } catch (e) {
-          // 读取失败则仅使用临时路径
-          this.setData({
-            image: '',
-            imageTempPath: tempFilePath
-          })
-        }
+        this.setData({ imageTempPath: tempFilePath })
       }
     })
   },
@@ -71,10 +57,12 @@ Page({
   },
 
   /**
-   * 保存菜品
+   * 保存菜品：图片传云存储，数据写云数据库
    */
   onSave() {
-    const { name, description, price, image } = this.data
+    if (this.data.saving) return
+
+    const { name, description, price, imageTempPath } = this.data
 
     // 表单验证
     if (!name.trim()) {
@@ -86,33 +74,61 @@ Page({
       return
     }
 
-    // 从本地存储读取已有列表
-    const foodList = wx.getStorageSync('foodList') || []
+    this.setData({ saving: true })
+    wx.showLoading({ title: '保存中...' })
 
-    // 创建新菜品
-    const newFood = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      description: description.trim(),
-      price: price.trim(),
-      image: image,
-      createTime: Date.now()
-    }
+    // 先上传图片（如有），再写入数据库
+    this.uploadImage(imageTempPath)
+      .then(fileID => {
+        return this.addFood({
+          name: name.trim(),
+          description: description.trim(),
+          price: price.trim(),
+          image: fileID || ''
+        })
+      })
+      .then(() => {
+        wx.hideLoading()
+        this.setData({ saving: false })
+        wx.showToast({ title: '添加成功', icon: 'success' })
+        setTimeout(() => wx.navigateBack(), 1000)
+      })
+      .catch(err => {
+        console.error('保存失败', err)
+        wx.hideLoading()
+        this.setData({ saving: false })
+        wx.showToast({
+          title: '保存失败，请检查云开发配置',
+          icon: 'none'
+        })
+      })
+  },
 
-    // 添加到列表头部
-    foodList.unshift(newFood)
+  /**
+   * 上传图片到云存储，返回 fileID（无图直接跳过）
+   */
+  uploadImage(tempFilePath) {
+    if (!tempFilePath) return Promise.resolve('')
 
-    // 保存到本地存储
-    wx.setStorageSync('foodList', foodList)
+    const ext = tempFilePath.split('.').pop() || 'jpg'
+    const cloudPath = `foods/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
 
-    wx.showToast({
-      title: '添加成功',
-      icon: 'success'
+    return wx.cloud.uploadFile({
+      cloudPath,
+      filePath: tempFilePath
+    }).then(res => res.fileID)
+  },
+
+  /**
+   * 写入云数据库 foods 集合
+   */
+  addFood(food) {
+    const db = wx.cloud.database()
+    return db.collection('foods').add({
+      data: {
+        ...food,
+        createTime: Date.now()
+      }
     })
-
-    // 延迟返回上一页
-    setTimeout(() => {
-      wx.navigateBack()
-    }, 1000)
   }
 })

@@ -1,10 +1,9 @@
 // pages/index/index.js
-const app = getApp()
-
 Page({
   data: {
     foodList: [],
-    loading: true
+    loading: true,
+    dbReady: false
   },
 
   onShow() {
@@ -12,15 +11,36 @@ Page({
     this.loadFoodList()
   },
 
+  onPullDownRefresh() {
+    this.loadFoodList()
+  },
+
   /**
-   * 从本地存储加载菜品列表
+   * 从云数据库加载菜品列表
    */
   loadFoodList() {
-    const foodList = wx.getStorageSync('foodList') || []
-    this.setData({
-      foodList,
-      loading: false
-    })
+    const db = wx.cloud.database()
+
+    db.collection('foods')
+      .orderBy('createTime', 'desc')
+      .get()
+      .then(res => {
+        this.setData({
+          foodList: res.data,
+          loading: false,
+          dbReady: true
+        })
+        wx.stopPullDownRefresh()
+      })
+      .catch(err => {
+        console.error('加载菜品失败', err)
+        this.setData({ loading: false })
+        wx.stopPullDownRefresh()
+        wx.showToast({
+          title: '加载失败，请确认云开发已开通',
+          icon: 'none'
+        })
+      })
   },
 
   /**
@@ -40,13 +60,5 @@ Page({
     wx.navigateTo({
       url: '/pages/add/add'
     })
-  },
-
-  /**
-   * 下拉刷新
-   */
-  onPullDownRefresh() {
-    this.loadFoodList()
-    wx.stopPullDownRefresh()
   }
 })

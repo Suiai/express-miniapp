@@ -1,28 +1,43 @@
 // cloudfunctions/sendOrderNotify/index.js
 // 云函数：发送点餐订阅消息通知
-// 部署前请确保已在微信公众平台配置订阅消息模板
+// 使用前：
+// 1. 在微信公众平台配置订阅消息模板（功能 → 订阅消息 → 添加模板）
+// 2. 将模板ID填入下方 TEMPLATE_ID（与 app.js 中保持一致）
+// 3. 根据模板的实际字段名修改 data 中的 key（thing1/thing2/time3 等）
 
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
+// 订阅消息模板ID（与 app.js 中 subscribeTemplateId 保持一致）
+const TEMPLATE_ID = 'TEMPLATE_ID_REPLACE_ME'
+
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
-  const { templateId, name, description, price, time } = event
+  const { name, description, price, time } = event
 
-  // 模板字段需与微信公众平台中配置的模板一致
-  // 以下为示例字段，请根据实际模板内容修改 data 中的 key
+  // 校验模板ID是否已配置
+  if (!TEMPLATE_ID || TEMPLATE_ID === 'TEMPLATE_ID_REPLACE_ME') {
+    return {
+      success: false,
+      error: '模板ID未配置，请在 cloudfunctions/sendOrderNotify/index.js 中填写'
+    }
+  }
+
+  // 模板字段限制：thing 类型最多 20 字，amount 最多 8 字
+  const safeDesc = (description || '').substring(0, 20)
+  const safeName = (name || '').substring(0, 20)
+
   try {
     const result = await cloud.openapi.subscribeMessage.send({
       touser: OPENID,
-      templateId: templateId,
+      templateId: TEMPLATE_ID,
       page: 'pages/index/index',
       miniprogramState: 'formal',
       data: {
-        // 模板字段示例：菜品名称、菜品描述、下单时间
-        // 请根据实际模板的关键词类型（thing/amount/time等）调整
-        thing1: { value: name },
-        thing2: { value: description.substring(0, 20) },
-        time3: { value: time }
+        // 以下 key 为示例，请根据实际模板的关键词名称修改
+        thing1: { value: safeName },      // 菜品名称
+        thing2: { value: safeDesc },      // 菜品描述
+        time3: { value: time }            // 下单时间
       }
     })
 

@@ -13,30 +13,47 @@ Page({
   },
 
   /**
-   * 加载菜品详情
+   * 从云数据库加载菜品详情
    */
   loadFoodDetail(id) {
-    const foodList = wx.getStorageSync('foodList') || []
-    const food = foodList.find(item => item.id === id)
+    const db = wx.cloud.database()
 
-    if (food) {
-      this.setData({ food })
-      wx.setNavigationBarTitle({ title: food.name })
-    } else {
-      wx.showToast({ title: '菜品不存在', icon: 'none' })
-      setTimeout(() => wx.navigateBack(), 1000)
-    }
+    db.collection('foods')
+      .doc(id)
+      .get()
+      .then(res => {
+        const food = res.data
+        this.setData({ food })
+        wx.setNavigationBarTitle({ title: food.name })
+      })
+      .catch(err => {
+        console.error('加载菜品详情失败', err)
+        wx.showToast({ title: '菜品不存在', icon: 'none' })
+        setTimeout(() => wx.navigateBack(), 1000)
+      })
   },
 
   /**
-   * 确认点餐 → 发送微信通知
+   * 确认点餐 → 请求订阅授权 → 云函数发送微信通知
    */
   onConfirmOrder() {
     if (this.data.ordering) return
     this.setData({ ordering: true })
 
-    const { name, description, price } = this.data.food
     const templateId = app.globalData.subscribeTemplateId
+
+    // 模板ID未配置时给出指引
+    if (!templateId || templateId === 'TEMPLATE_ID_REPLACE_ME') {
+      this.setData({ ordering: false })
+      wx.showModal({
+        title: '通知功能未配置',
+        content: '请先在微信公众平台创建订阅消息模板，将模板ID填入 app.js 的 subscribeTemplateId 后重新编译。\n\n（订单仍会记录，只是暂无法发送微信通知）',
+        showCancel: false,
+        confirmText: '知道了',
+        confirmColor: '#ff6b35'
+      })
+      return
+    }
 
     // 1. 请求订阅消息授权
     wx.requestSubscribeMessage({
@@ -55,8 +72,11 @@ Page({
       },
       fail: (err) => {
         console.log('订阅消息授权失败', err)
-        // 授权失败时使用模拟通知
-        this.simulateNotification()
+        this.setData({ ordering: false })
+        wx.showToast({
+          title: '授权失败，无法发送通知',
+          icon: 'none'
+        })
       }
     })
   },
@@ -82,35 +102,33 @@ Page({
         if (res.result && res.result.success) {
           wx.showModal({
             title: '点餐成功',
-            content: '已为您发送微信通知，请到微信消息中查看',
+            content: '已为您发送微信通知，请到微信服务通知中查看',
             showCancel: false,
-            confirmText: '知道了'
+            confirmText: '知道了',
+            confirmColor: '#ff6b35'
           })
         } else {
-          // 云函数返回失败，使用模拟通知
-          this.simulateNotification()
+          const errMsg = (res.result && res.result.error) || '未知错误'
+          wx.showModal({
+            title: '通知发送失败',
+            content: `${errMsg}\n\n请检查云函数是否已部署、模板字段是否匹配`,
+            showCancel: false,
+            confirmText: '知道了',
+            confirmColor: '#ff6b35'
+          })
         }
       },
       fail: (err) => {
-        console.log('云函数调用失败', err)
-        // 云函数未部署，使用模拟通知
-        this.simulateNotification()
+        console.error('云函数调用失败', err)
+        this.setData({ ordering: false })
+        wx.showModal({
+          title: '通知发送失败',
+          content: '请确认已部署 sendOrderNotify 云函数（右键云函数目录 → 上传并部署：云端安装依赖）',
+          showCancel: false,
+          confirmText: '知道了',
+          confirmColor: '#ff6b35'
+        })
       }
-    })
-  },
-
-  /**
-   * 模拟通知（云开发未开通时的降级方案）
-   */
-  simulateNotification() {
-    this.setData({ ordering: false })
-    const { name } = this.data.food
-    wx.showModal({
-      title: '点餐成功',
-      content: `您已成功点餐：${name}\n\n（温馨提示：当前为模拟通知。如需接收真实微信通知，请在微信开发者工具中开通云开发并部署云函数，详见 README）`,
-      showCancel: false,
-      confirmText: '知道了',
-      confirmColor: '#ff6b35'
     })
   },
 
