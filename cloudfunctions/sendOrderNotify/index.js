@@ -43,7 +43,8 @@ exports.main = async (event, context) => {
     })
 
     console.log('订阅消息发送成功', result)
-    return { success: true, result }
+    // 直接返回 result 可能包含 BigInt，JSON.stringify 会失败，只返回简单成功信息
+    return { success: true, message: '通知发送成功' }
   } catch (err) {
     console.error('订阅消息发送失败', err)
     return { success: false, error: err.errMsg || String(err) }
