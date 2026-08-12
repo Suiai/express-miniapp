@@ -121,9 +121,10 @@ Page({
       fail: (err) => {
         console.error('云函数调用失败', err)
         this.setData({ ordering: false })
+        const detail = (err && (err.errMsg || err.message)) || '未知错误'
         wx.showModal({
           title: '通知发送失败',
-          content: '请确认已部署 sendOrderNotify 云函数（右键云函数目录 → 上传并部署：云端安装依赖）',
+          content: `${detail}\n\n如报 -501000/未找到云函数，请确认小程序与云函数在同一云环境`,
           showCancel: false,
           confirmText: '知道了',
           confirmColor: '#ff6b35'
