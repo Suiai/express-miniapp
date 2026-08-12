@@ -33,6 +33,6 @@ App({
     userInfo: null,
     // 订阅消息模板ID：在微信公众平台（mp.weixin.qq.com）
     // 功能 → 订阅消息 → 添加模板 获取后替换
-    subscribeTemplateId: 'TEMPLATE_ID_REPLACE_ME'
+    subscribeTemplateId: 'C95Rasr4Ky0Gmu-FJRaBzYFHYC25Av_glLmegPTzGcc'
   }
 })

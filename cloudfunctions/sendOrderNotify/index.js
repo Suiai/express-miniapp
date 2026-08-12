@@ -9,7 +9,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 // 订阅消息模板ID（与 app.js 中 subscribeTemplateId 保持一致）
-const TEMPLATE_ID = 'TEMPLATE_ID_REPLACE_ME'
+const TEMPLATE_ID = 'C95Rasr4Ky0Gmu-FJRaBzYFHYC25Av_glLmegPTzGcc'
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
@@ -32,7 +32,8 @@ exports.main = async (event, context) => {
       touser: OPENID,
       templateId: TEMPLATE_ID,
       page: 'pages/index/index',
-      miniprogramState: 'formal',
+      // 测试阶段用 developer，正式发布后改为 formal
+      miniprogramState: 'developer',
       data: {
         // 以下 key 为示例，请根据实际模板的关键词名称修改
         thing1: { value: safeName },      // 菜品名称
