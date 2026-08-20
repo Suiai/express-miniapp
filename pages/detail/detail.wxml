@@ -33,5 +33,17 @@
       {{ordering ? '处理中...' : '确认点餐'}}
     </button>
     <text class="action-hint">点击确认后将收到微信通知</text>
+
+    <!-- 管理操作 -->
+    <view class="manage-row">
+      <button class="btn-manage btn-edit" bindtap="onEdit">
+        <text class="manage-icon">✏️</text>
+        <text>编辑</text>
+      </button>
+      <button class="btn-manage btn-delete" bindtap="onDelete">
+        <text class="manage-icon">🗑️</text>
+        <text>删除</text>
+      </button>
+    </view>
   </view>
 </view>

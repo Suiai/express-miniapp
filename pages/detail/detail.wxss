@@ -72,3 +72,37 @@
   font-size: 24rpx;
   color: var(--color-text-placeholder);
 }
+
+/* 管理操作 */
+.manage-row {
+  margin-top: 20rpx;
+  display: flex;
+  gap: 24rpx;
+  width: 100%;
+}
+
+.btn-manage {
+  flex: 1;
+  height: 80rpx;
+  font-size: 28rpx;
+  border-radius: 14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  background: var(--color-bg-card);
+  color: var(--color-text-regular);
+  border: 1rpx solid var(--color-border);
+}
+
+.btn-manage::after {
+  border: none;
+}
+
+.manage-icon {
+  font-size: 30rpx;
+}
+
+.btn-delete {
+  color: #e64340;
+}

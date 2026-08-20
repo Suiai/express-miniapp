@@ -4,12 +4,23 @@ const app = getApp()
 Page({
   data: {
     food: null,
+    foodId: '',
     ordering: false
   },
 
   onLoad(options) {
     const { id } = options
+    this.setData({ foodId: id })
     this.loadFoodDetail(id)
+  },
+
+  /**
+   * 从编辑页返回后刷新数据
+   */
+  onShow() {
+    if (this.data.foodId && this.data.food) {
+      this.loadFoodDetail(this.data.foodId)
+    }
   },
 
   /**
@@ -144,5 +155,79 @@ Page({
     const h = date.getHours().toString().padStart(2, '0')
     const min = date.getMinutes().toString().padStart(2, '0')
     return `${y}-${m}-${d} ${h}:${min}`
+  },
+
+  /**
+   * 编辑菜品 → 跳转添加页（编辑模式）
+   */
+  onEdit() {
+    wx.navigateTo({
+      url: `/pages/add/add?id=${this.data.foodId}`
+    })
+  },
+
+  /**
+   * 删除菜品：二次确认 → 删云存储图片 + 删数据库记录
+   */
+  onDelete() {
+    const food = this.data.food
+    if (!food) return
+
+    wx.showModal({
+      title: '确认删除',
+      content: `确定删除「${food.name}」吗？此操作不可恢复。`,
+      confirmText: '删除',
+      confirmColor: '#e64340',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) this.doDelete()
+      }
+    })
+  },
+
+  /**
+   * 执行删除
+   */
+  doDelete() {
+    const { foodId, food } = this.data
+    const db = wx.cloud.database()
+    wx.showLoading({ title: '删除中...' })
+
+    // 1. 删除云存储图片（失败不阻断流程）
+    const delImg = food.image
+      ? new Promise(resolve => {
+          wx.cloud.deleteFile({
+            fileList: [food.image],
+            success: () => resolve(),
+            fail: () => resolve()
+          })
+        })
+      : Promise.resolve()
+
+    // 2. 删除数据库记录
+    delImg
+      .then(() => db.collection('foods').doc(foodId).remove())
+      .then(() => {
+        wx.hideLoading()
+        wx.showToast({ title: '已删除', icon: 'success' })
+        setTimeout(() => wx.navigateBack(), 1000)
+      })
+      .catch(err => {
+        wx.hideLoading()
+        console.error('删除失败', err)
+        const msg = (err && (err.errMsg || err.message)) || ''
+        const errCode = err && err.errCode
+        if (msg.includes('permission') || msg.includes('PERMISSION_DENIED') || errCode === -502003) {
+          wx.showModal({
+            title: '权限不足',
+            content: '只能删除自己添加的菜品。系统示例菜品请在云开发控制台删除。',
+            showCancel: false,
+            confirmText: '知道了',
+            confirmColor: '#ff6b35'
+          })
+        } else {
+          wx.showToast({ title: '删除失败，请重试', icon: 'none' })
+        }
+      })
   }
 })

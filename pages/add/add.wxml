@@ -59,7 +59,7 @@
   </view>
 
   <!-- 保存按钮 -->
-  <button class="btn btn-primary btn-block save-btn" bindtap="onSave">
-    保存菜品
+  <button class="btn btn-primary btn-block save-btn" bindtap="onSave" loading="{{saving}}" disabled="{{saving}}">
+    {{saving ? '保存中...' : (isEdit ? '保存修改' : '保存菜品')}}
   </button>
 </view>
