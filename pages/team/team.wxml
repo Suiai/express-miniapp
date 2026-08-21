@@ -1,9 +1,10 @@
 <!-- pages/team/team.wxml -->
+<wxs src="./team.wxs" module="initials" />
 <view class="container">
   <!-- 用户信息卡片 -->
   <view class="user-card">
     <image wx:if="{{user.avatarUrl}}" class="user-avatar" src="{{user.avatarUrl}}" mode="aspectFill" />
-    <view wx:else class="user-avatar user-avatar-placeholder">{{(user.nickname || '用').slice(0, 1)}}</view>
+    <view wx:else class="user-avatar user-avatar-placeholder">{{initials.get(user.nickname)}}</view>
     <view class="user-info">
       <text class="user-name">{{user.nickname || '加载中...'}}</text>
       <text class="user-openid">ID: {{user.openid || '--'}}</text>
@@ -52,7 +53,7 @@
       <!-- 成员列表 -->
       <view class="member-list">
         <view class="member-item" wx:for="{{detailTeam.members}}" wx:for-item="member" wx:key="_id">
-          <view class="member-avatar member-avatar-placeholder">{{(member.nickname || '用').slice(0, 1)}}</view>
+          <view class="member-avatar member-avatar-placeholder">{{initials.get(member.nickname)}}</view>
           <text class="member-name">{{member.nickname}}</text>
           <text class="member-role {{member.role === 'owner' ? 'role-owner' : ''}}">
             {{member.role === 'owner' ? '创建者' : '成员'}}

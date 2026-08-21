@@ -1,0 +1,9 @@
+// pages/team/team.wxs
+// WXML 模板中不能直接调用 .slice() 等方法，通过 wxs 提供字符截取助手
+var initials = {
+  get: function (nickname) {
+    return (nickname || '用').slice(0, 1)
+  }
+}
+
+module.exports = initials
