@@ -1,11 +1,14 @@
 // pages/add/add.js
-// 兼容「新增菜品」与「编辑菜品」两种模式：
-//   - 新增：onLoad 无 id 参数
-//   - 编辑：onLoad 收到 id 参数，加载菜品数据填充表单，保存时用 update
+// 新增/编辑菜谱：兼容个人与团队两种归属
+//   - 新增：onLoad 接收 scope（personal/team）与 teamId（团队时）
+//   - 编辑：onLoad 接收 id，加载菜谱数据填充表单
+// 所有数据库读写走 recipe 云函数（权限在云端校验）
 Page({
   data: {
-    foodId: '',         // 编辑模式：菜品 _id；空 = 新增
-    isEdit: false,      // 是否编辑模式
+    foodId: '',         // 编辑模式：菜谱 _id；空 = 新增
+    isEdit: false,
+    scope: 'personal',  // personal 个人菜谱 | team 团队菜谱
+    teamId: '',         // 团队菜谱所属团队
     name: '',
     description: '',
     price: '',
@@ -18,37 +21,46 @@ Page({
     if (options.id) {
       // 编辑模式
       this.setData({ foodId: options.id, isEdit: true })
-      wx.setNavigationBarTitle({ title: '编辑菜品' })
+      wx.setNavigationBarTitle({ title: '编辑菜谱' })
       this.loadFood(options.id)
     } else {
       // 新增模式
-      wx.setNavigationBarTitle({ title: '添加菜品' })
+      const scope = options.scope === 'team' ? 'team' : 'personal'
+      this.setData({ scope, teamId: options.teamId || '' })
+      wx.setNavigationBarTitle({ title: scope === 'team' ? '添加团队菜谱' : '添加菜谱' })
     }
   },
 
   /**
-   * 编辑模式：加载菜品现有数据
+   * 编辑模式：通过 recipe 云函数加载菜谱
    */
   loadFood(id) {
-    const db = wx.cloud.database()
     wx.showLoading({ title: '加载中...' })
-    db.collection('foods').doc(id).get()
+    wx.cloud.callFunction({ name: 'recipe', data: { action: 'get', recipeId: id } })
       .then(res => {
         wx.hideLoading()
-        const food = res.data
-        this.setData({
-          name: food.name || '',
-          description: food.description || '',
-          price: food.price || '',
-          imageFileID: food.image || '',
-          imageTempPath: food.image || ''  // 编辑模式下预览复用已有 fileID
-        })
+        if (res.result && res.result.success) {
+          const food = res.result.recipe
+          this.setData({
+            scope: food.scope || 'personal',
+            teamId: food.teamId || '',
+            name: food.name || '',
+            description: food.description || '',
+            price: food.price || '',
+            imageFileID: food.image || '',
+            imageTempPath: food.image || ''  // 编辑模式下预览复用已有 fileID
+          })
+        } else {
+          const msg = (res.result && res.result.error) || '菜谱不存在'
+          wx.showToast({ title: msg, icon: 'none' })
+          setTimeout(() => wx.navigateBack(), 1200)
+        }
       })
       .catch(err => {
         wx.hideLoading()
-        console.error('加载菜品失败', err)
-        wx.showToast({ title: '菜品不存在', icon: 'none' })
-        setTimeout(() => wx.navigateBack(), 1000)
+        console.error('加载菜谱失败', err)
+        wx.showToast({ title: '加载失败', icon: 'none' })
+        setTimeout(() => wx.navigateBack(), 1200)
       })
   },
 
@@ -71,48 +83,32 @@ Page({
           return
         }
 
-        // 选择新图后，imageTempPath 变为本地临时路径，与 imageFileID 不同 → 保存时判定为换图
         this.setData({ imageTempPath: tempFilePath })
       }
     })
   },
 
-  /**
-   * 输入菜品名称
-   */
   onNameInput(e) {
     this.setData({ name: e.detail.value })
   },
 
-  /**
-   * 输入菜品描述
-   */
   onDescInput(e) {
     this.setData({ description: e.detail.value })
   },
 
-  /**
-   * 输入价格
-   */
   onPriceInput(e) {
     this.setData({ price: e.detail.value })
   },
 
   /**
-   * 保存菜品：根据模式分流
+   * 保存：根据模式分流
    */
   onSave() {
     if (this.data.saving) return
 
-    const { name, description } = this.data
-
-    // 表单验证
+    const { name } = this.data
     if (!name.trim()) {
-      wx.showToast({ title: '请输入菜品名称', icon: 'none' })
-      return
-    }
-    if (!description.trim()) {
-      wx.showToast({ title: '请输入菜品描述', icon: 'none' })
+      wx.showToast({ title: '请输入菜谱名称', icon: 'none' })
       return
     }
 
@@ -124,53 +120,64 @@ Page({
   },
 
   /**
-   * 新增模式：图片传云存储 → 数据写云数据库
+   * 新增：图片传云存储 → recipe.create 云函数写库
    */
   saveAdd() {
-    const { name, description, price, imageTempPath } = this.data
+    const { name, description, price, imageTempPath, scope, teamId } = this.data
     this.setData({ saving: true })
     wx.showLoading({ title: '保存中...' })
 
     this.uploadImage(imageTempPath)
-      .then(fileID => this.addFood({
-        name: name.trim(),
-        description: description.trim(),
-        price: price.trim(),
-        image: fileID || ''
-      }))
-      .then(() => {
+      .then(fileID => {
+        return wx.cloud.callFunction({
+          name: 'recipe',
+          data: {
+            action: 'create',
+            scope,
+            teamId,
+            data: {
+              name: name.trim(),
+              description: description.trim(),
+              price: price.trim(),
+              image: fileID || ''
+            }
+          }
+        })
+      })
+      .then(res => {
         wx.hideLoading()
         this.setData({ saving: false })
-        wx.showToast({ title: '添加成功', icon: 'success' })
-        setTimeout(() => wx.navigateBack(), 1000)
+        if (res.result && res.result.success) {
+          wx.showToast({ title: '添加成功', icon: 'success' })
+          setTimeout(() => wx.navigateBack(), 1000)
+        } else {
+          wx.showToast({ title: (res.result && res.result.error) || '保存失败', icon: 'none' })
+        }
       })
       .catch(err => {
         console.error('保存失败', err)
         wx.hideLoading()
         this.setData({ saving: false })
-        wx.showToast({ title: '保存失败，请检查云开发配置', icon: 'none' })
+        this.handleSaveError(err)
       })
   },
 
   /**
-   * 编辑模式：换图则上传新图并删旧图 → update 数据库
+   * 编辑：换图则上传新图并删旧图 → recipe.update 云函数
    */
   saveEdit() {
     const { foodId, name, description, price, imageTempPath, imageFileID } = this.data
-    // 是否选择了新的本地图片（与云端 fileID 不同）
     const changedImage = !!imageTempPath && imageTempPath !== imageFileID
 
     const updateData = {
       name: name.trim(),
       description: description.trim(),
-      price: price.trim(),
-      updateTime: Date.now()
+      price: price.trim()
     }
 
     this.setData({ saving: true })
     wx.showLoading({ title: '保存中...' })
 
-    // 1. 处理图片：换图则上传新图；不换则不动 image 字段
     const imageTask = changedImage
       ? this.uploadImage(imageTempPath)
       : Promise.resolve('')
@@ -178,44 +185,38 @@ Page({
     imageTask
       .then(newFileID => {
         if (newFileID) updateData.image = newFileID
-        const db = wx.cloud.database()
-        return db.collection('foods').doc(foodId).update({ data: updateData })
+        return wx.cloud.callFunction({
+          name: 'recipe',
+          data: { action: 'update', recipeId: foodId, data: updateData }
+        })
       })
-      .then(() => {
-        // 换了图且原来有图，删除旧图（失败不阻断）
-        if (changedImage && imageFileID) {
-          wx.cloud.deleteFile({ fileList: [imageFileID] }).catch(() => {})
-        }
+      .then(res => {
         wx.hideLoading()
         this.setData({ saving: false })
-        wx.showToast({ title: '修改成功', icon: 'success' })
-        setTimeout(() => wx.navigateBack(), 1000)
+        if (res.result && res.result.success) {
+          // 换了图且原来有图，删除旧图（失败不阻断）
+          if (changedImage && imageFileID) {
+            wx.cloud.deleteFile({ fileList: [imageFileID] }).catch(() => {})
+          }
+          wx.showToast({ title: '修改成功', icon: 'success' })
+          setTimeout(() => wx.navigateBack(), 1000)
+        } else {
+          wx.showToast({ title: (res.result && res.result.error) || '修改失败', icon: 'none' })
+        }
       })
       .catch(err => {
         console.error('修改失败', err)
         wx.hideLoading()
         this.setData({ saving: false })
-        this.handleSaveError(err, '修改失败')
+        this.handleSaveError(err)
       })
   },
 
   /**
-   * 统一处理保存/修改失败：权限不足等给针对性提示
+   * 保存失败提示（含权限不足引导）
    */
-  handleSaveError(err, defaultTitle) {
-    const msg = (err && (err.errMsg || err.message)) || ''
-    const errCode = err && err.errCode
-    if (msg.includes('permission') || msg.includes('PERMISSION_DENIED') || errCode === -502003) {
-      wx.showModal({
-        title: '权限不足',
-        content: '只能编辑自己添加的菜品。系统示例菜品请在云开发控制台修改。',
-        showCancel: false,
-        confirmText: '知道了',
-        confirmColor: '#ff6b35'
-      })
-    } else {
-      wx.showToast({ title: `${defaultTitle}，请重试`, icon: 'none' })
-    }
+  handleSaveError(err) {
+    wx.showToast({ title: '操作失败，请重试', icon: 'none' })
   },
 
   /**
@@ -225,24 +226,11 @@ Page({
     if (!tempFilePath) return Promise.resolve('')
 
     const ext = tempFilePath.split('.').pop() || 'jpg'
-    const cloudPath = `foods/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+    const cloudPath = `recipes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
 
     return wx.cloud.uploadFile({
       cloudPath,
       filePath: tempFilePath
     }).then(res => res.fileID)
-  },
-
-  /**
-   * 写入云数据库 foods 集合（新增模式）
-   */
-  addFood(food) {
-    const db = wx.cloud.database()
-    return db.collection('foods').add({
-      data: {
-        ...food,
-        createTime: Date.now()
-      }
-    })
   }
 })

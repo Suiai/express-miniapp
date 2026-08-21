@@ -1,5 +1,5 @@
 {
-  "description": "点餐小程序",
+  "description": "私人菜谱小程序（个人菜谱 + 团队协作）",
   "packOptions": {
     "ignore": [
       {

@@ -19,6 +19,12 @@
       <text class="food-name">{{food.name}}</text>
       <text wx:if="{{food.price}}" class="price-tag">{{food.price}}</text>
     </view>
+    <view class="scope-tag-row">
+      <text class="scope-tag {{food.scope === 'team' ? 'tag-team' : 'tag-personal'}}">
+        {{food.scope === 'team' ? '团队菜谱' : '个人菜谱'}}
+      </text>
+      <text wx:if="{{food.scope === 'team'}}" class="scope-team-name">{{food.teamName}}</text>
+    </view>
     <view class="food-desc">{{food.description}}</view>
   </view>
 

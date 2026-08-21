@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "美味点餐",
+  "navigationBarTitleText": "私人菜谱",
   "enablePullDownRefresh": true,
   "usingComponents": {
     "food-item": "/components/food-item/food-item"

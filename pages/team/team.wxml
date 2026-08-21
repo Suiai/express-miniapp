@@ -1,0 +1,87 @@
+<!-- pages/team/team.wxml -->
+<view class="container">
+  <!-- 用户信息卡片 -->
+  <view class="user-card">
+    <image wx:if="{{user.avatarUrl}}" class="user-avatar" src="{{user.avatarUrl}}" mode="aspectFill" />
+    <view wx:else class="user-avatar user-avatar-placeholder">{{(user.nickname || '用').slice(0, 1)}}</view>
+    <view class="user-info">
+      <text class="user-name">{{user.nickname || '加载中...'}}</text>
+      <text class="user-openid">ID: {{user.openid || '--'}}</text>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-row">
+    <button class="btn btn-primary action-btn" bindtap="onCreateTeam">创建团队</button>
+    <button class="btn btn-outline action-btn" bindtap="onJoinTeam">加入团队</button>
+  </view>
+
+  <!-- 团队列表 -->
+  <view class="section-title">我的团队（{{teamList.length}}）</view>
+  <view wx:if="{{teamList.length === 0}}" class="empty-state">
+    <text class="empty-text">还没有团队，点击上方「创建团队」或输入邀请码加入</text>
+  </view>
+
+  <view class="team-card" wx:for="{{teamList}}" wx:key="_id">
+    <!-- 团队概要 -->
+    <view class="team-card-header" bindtap="onToggleDetail" data-id="{{item._id}}">
+      <view class="team-card-left">
+        <text class="team-name">{{item.name}}</text>
+        <text class="team-desc">{{item.desc || '暂无描述'}}</text>
+      </view>
+      <view class="team-card-right">
+        <text class="team-count">{{item.memberCount}} 人</text>
+        <text class="team-role {{item.myRole === 'owner' ? 'role-owner' : ''}}">
+          {{item.myRole === 'owner' ? '创建者' : '成员'}}
+        </text>
+        <text class="team-arrow">{{expandedTeamId === item._id ? '▾' : '▸'}}</text>
+      </view>
+    </view>
+
+    <!-- 展开详情 -->
+    <view wx:if="{{expandedTeamId === item._id && detailTeam}}" class="team-detail">
+      <!-- 邀请码 -->
+      <view class="invite-row">
+        <text class="invite-label">邀请码</text>
+        <text class="invite-code" bindtap="onCopyCode" data-code="{{item.inviteCode}}">{{item.inviteCode}}</text>
+        <text class="invite-tip" bindtap="onCopyCode" data-code="{{item.inviteCode}}">复制</text>
+        <text wx:if="{{item.myRole === 'owner'}}" class="invite-reset" bindtap="onRegenerateCode" data-id="{{item._id}}">重置</text>
+      </view>
+      <view class="invite-hint">把邀请码发给成员，对方在「加入团队」输入即可加入</view>
+
+      <!-- 成员列表 -->
+      <view class="member-list">
+        <view class="member-item" wx:for="{{detailTeam.members}}" wx:for-item="member" wx:key="_id">
+          <view class="member-avatar member-avatar-placeholder">{{(member.nickname || '用').slice(0, 1)}}</view>
+          <text class="member-name">{{member.nickname}}</text>
+          <text class="member-role {{member.role === 'owner' ? 'role-owner' : ''}}">
+            {{member.role === 'owner' ? '创建者' : '成员'}}
+          </text>
+          <text
+            wx:if="{{item.myRole === 'owner' && member.role !== 'owner'}}"
+            class="member-remove"
+            data-team-id="{{item._id}}"
+            data-openid="{{member.openid}}"
+            catchtap="onRemoveMember"
+          >移除</text>
+        </view>
+      </view>
+
+      <!-- 退出/解散 -->
+      <view class="team-actions">
+        <button
+          wx:if="{{item.myRole === 'owner'}}"
+          class="btn btn-danger-outline"
+          data-id="{{item._id}}"
+          bindtap="onDeleteTeam"
+        >解散团队</button>
+        <button
+          wx:else
+          class="btn btn-danger-outline"
+          data-id="{{item._id}}"
+          bindtap="onLeaveTeam"
+        >退出团队</button>
+      </view>
+    </view>
+  </view>
+</view>

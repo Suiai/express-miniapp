@@ -1,5 +1,20 @@
 /* pages/add/add.wxss */
 
+/* 归属标识 */
+.scope-badge {
+  display: inline-flex;
+  background: rgba(255, 107, 53, 0.1);
+  border: 2rpx solid var(--color-primary);
+  border-radius: 999rpx;
+  padding: 6rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.scope-badge-text {
+  font-size: 24rpx;
+  color: var(--color-primary);
+}
+
 /* 照片上传区域 */
 .upload-area {
   width: 100%;

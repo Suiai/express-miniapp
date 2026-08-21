@@ -1,0 +1,271 @@
+/* pages/team/team.wxss */
+
+/* 用户信息卡片 */
+.user-card {
+  display: flex;
+  align-items: center;
+  background: var(--color-bg-card);
+  border-radius: 16rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.user-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+}
+
+.user-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 40rpx;
+  font-weight: 600;
+}
+
+.user-info {
+  margin-left: 24rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.user-openid {
+  font-size: 22rpx;
+  color: var(--color-text-placeholder);
+  margin-top: 4rpx;
+}
+
+/* 操作按钮 */
+.action-row {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 32rpx;
+}
+
+.action-btn {
+  flex: 1;
+  height: 80rpx;
+  font-size: 30rpx;
+}
+
+.btn-outline {
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  border: 2rpx solid var(--color-primary);
+}
+
+.btn-outline:active {
+  background: rgba(255, 107, 53, 0.08);
+}
+
+/* 团队列表 */
+.section-title {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  margin-bottom: 16rpx;
+  padding-left: 8rpx;
+}
+
+.team-card {
+  background: var(--color-bg-card);
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx;
+}
+
+.team-card-left {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.team-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.team-desc {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  margin-top: 6rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-card-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-left: 16rpx;
+}
+
+.team-count {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+.team-role {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: #f0f0f0;
+  color: var(--color-text-regular);
+}
+
+.team-role.role-owner {
+  background: rgba(255, 107, 53, 0.1);
+  color: var(--color-primary);
+}
+
+.team-arrow {
+  color: var(--color-text-placeholder);
+  font-size: 24rpx;
+}
+
+/* 团队详情 */
+.team-detail {
+  border-top: 2rpx solid var(--color-border);
+  padding: 24rpx;
+}
+
+.invite-row {
+  display: flex;
+  align-items: center;
+}
+
+.invite-label {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+}
+
+.invite-code {
+  font-size: 36rpx;
+  font-weight: 700;
+  letter-spacing: 6rpx;
+  color: var(--color-primary);
+  margin: 0 20rpx;
+}
+
+.invite-tip {
+  font-size: 24rpx;
+  color: var(--color-primary);
+  padding: 6rpx 16rpx;
+  border: 2rpx solid var(--color-primary);
+  border-radius: 8rpx;
+}
+
+.invite-reset {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  margin-left: 16rpx;
+  text-decoration: underline;
+}
+
+.invite-hint {
+  font-size: 22rpx;
+  color: var(--color-text-placeholder);
+  margin-top: 10rpx;
+}
+
+/* 成员列表 */
+.member-list {
+  margin-top: 24rpx;
+  border-top: 2rpx solid var(--color-border);
+  padding-top: 8rpx;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid var(--color-border);
+}
+
+.member-item:last-child {
+  border-bottom: none;
+}
+
+.member-avatar {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.member-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.member-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-role {
+  font-size: 22rpx;
+  color: var(--color-text-secondary);
+  margin-right: 16rpx;
+}
+
+.member-role.role-owner {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.member-remove {
+  font-size: 24rpx;
+  color: var(--color-danger);
+  padding: 6rpx 16rpx;
+  border: 2rpx solid var(--color-danger);
+  border-radius: 8rpx;
+}
+
+/* 退出/解散 */
+.team-actions {
+  margin-top: 24rpx;
+}
+
+.btn-danger-outline {
+  background: var(--color-bg-card);
+  color: var(--color-danger);
+  border: 2rpx solid var(--color-danger);
+  width: 100%;
+  height: 76rpx;
+  font-size: 28rpx;
+}
+
+.btn-danger-outline:active {
+  background: rgba(255, 77, 79, 0.08);
+}

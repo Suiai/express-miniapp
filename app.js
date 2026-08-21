@@ -1,7 +1,7 @@
 // app.js
 App({
   onLaunch() {
-    console.log('点餐小程序启动')
+    console.log('私人菜谱小程序启动')
 
     // 初始化云开发（已开通，需在开发者工具中确认云环境）
     if (wx.cloud) {
@@ -31,6 +31,9 @@ App({
 
   globalData: {
     userInfo: null,
+    // 当前用户（openid 等，由 user 云函数注册后缓存）
+    myOpenid: '',
+    myUser: null,
     // 订阅消息模板ID：在微信公众平台（mp.weixin.qq.com）
     // 功能 → 订阅消息 → 添加模板 获取后替换
     subscribeTemplateId: 'C95Rasr4Ky0Gmu-FJRaBzYFHYC25Av_glLmegPTzGcc'

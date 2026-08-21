@@ -1,13 +1,14 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/team/team",
     "pages/add/add",
     "pages/detail/detail"
   ],
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#ff6b35",
-    "navigationBarTitleText": "美味点餐",
+    "navigationBarTitleText": "私人菜谱",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f5f5"
   },

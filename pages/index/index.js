@@ -1,110 +1,175 @@
 // pages/index/index.js
+const app = getApp()
+
 Page({
   data: {
+    scope: 'personal',      // personal 我的菜谱 | team 团队菜谱
+    myOpenid: '',
+    teamList: [],           // 我的团队（团队模式用）
+    currentTeamId: '',      // 当前选中团队
     foodList: [],
-    loading: true,
-    dbReady: false
+    loading: true
+  },
+
+  onLoad() {
+    this.ensureUser()
   },
 
   onShow() {
-    // 每次显示页面时刷新列表（从添加页返回后也能看到新数据）
-    this.loadFoodList()
+    this.refresh()
   },
 
   onPullDownRefresh() {
-    this.loadFoodList()
+    this.refresh()
   },
 
   /**
-   * 从云数据库加载菜品列表
+   * 确保用户已注册并拿到 openid（user 云函数）
+   */
+  ensureUser() {
+    if (app.globalData.myOpenid) {
+      this.setData({ myOpenid: app.globalData.myOpenid })
+      return Promise.resolve()
+    }
+    // 复用进行中的请求，避免重复注册
+    if (this._userPromise) return this._userPromise
+    this._userPromise = wx.cloud.callFunction({ name: 'user', data: { action: 'get' } })
+      .then(res => {
+        if (res.result && res.result.success) {
+          app.globalData.myOpenid = res.result.user.openid
+          app.globalData.myUser = res.result.user
+          this.setData({ myOpenid: res.result.user.openid })
+        }
+      })
+      .catch(err => console.error('获取用户失败', err))
+      .finally(() => { this._userPromise = null })
+    return this._userPromise
+  },
+
+  /**
+   * 刷新：确保用户 → 加载团队（团队模式）→ 加载菜谱
+   */
+  refresh() {
+    this.ensureUser().then(() => {
+      this.loadTeams().then(() => this.loadFoodList())
+    })
+  },
+
+  /**
+   * 加载我的团队列表（仅团队模式需要）
+   */
+  loadTeams() {
+    if (this.data.scope !== 'team') return Promise.resolve()
+    return wx.cloud.callFunction({ name: 'team', data: { action: 'listMyTeams' } })
+      .then(res => {
+        if (res.result && res.result.success) {
+          const list = res.result.list || []
+          let currentTeamId = this.data.currentTeamId
+          // 当前团队已失效（被解散/退出）时回退到第一个
+          if (!list.some(t => t._id === currentTeamId)) {
+            currentTeamId = list.length ? list[0]._id : ''
+          }
+          this.setData({ teamList: list, currentTeamId })
+        }
+      })
+      .catch(err => console.error('加载团队失败', err))
+  },
+
+  /**
+   * 加载菜谱列表（走 recipe 云函数，前端无数据库权限）
    */
   loadFoodList() {
-    const db = wx.cloud.database()
-
-    db.collection('foods')
-      .orderBy('createTime', 'desc')
-      .get()
-      .then(res => {
-        this.setData({
-          foodList: res.data,
-          loading: false,
-          dbReady: true
-        })
-        wx.stopPullDownRefresh()
-      })
-      .catch(err => {
-        console.error('加载菜品失败', err)
-        this.setData({ loading: false })
-        wx.stopPullDownRefresh()
-        this.handleLoadError(err)
-      })
+    const { scope, currentTeamId } = this.data
+    wx.cloud.callFunction({
+      name: 'recipe',
+      data: { action: 'list', scope, teamId: currentTeamId }
+    }).then(res => {
+      this.setData({ loading: false })
+      wx.stopPullDownRefresh()
+      if (res.result && res.result.success) {
+        this.setData({ foodList: res.result.list || [] })
+      } else {
+        const msg = (res.result && res.result.error) || '加载失败'
+        wx.showToast({ title: msg, icon: 'none' })
+      }
+    }).catch(err => {
+      console.error('加载菜谱失败', err)
+      this.setData({ loading: false })
+      wx.stopPullDownRefresh()
+      this.handleLoadError(err)
+    })
   },
 
   /**
-   * 分析加载失败原因，给出针对性提示
+   * 分析加载失败原因
    */
   handleLoadError(err) {
     const msg = (err && (err.errMsg || err.message)) || ''
-    const errCode = err && err.errCode
-
-    // 1. 集合不存在（最常见：未在云开发控制台创建 foods 集合）
-    if (msg.includes('collection not exists') || msg.includes('DATABASE_COLLECTION_NOT_EXIST') || errCode === -502005) {
+    if (msg.includes('FunctionName') || msg.includes('FUNCTION_NOT_FOUND') || msg.includes('-501000')) {
       wx.showModal({
-        title: '数据库集合不存在',
-        content: '请在云开发控制台 → 数据库 → 新建集合 foods，权限选「所有用户可读，仅创建者可读写」，然后重新进入本页。',
+        title: '云函数未部署',
+        content: '请先部署 user/recipe/team 云函数（右键云函数目录 → 上传并部署：云端安装依赖），并运行一次 initDB 初始化数据库。',
         showCancel: false,
         confirmText: '知道了'
       })
       return
     }
-
-    // 2. 环境不存在 / 未开通云开发
-    if (msg.includes('env not exists') || msg.includes('ENV_NOT_FOUND') || errCode === -502001) {
-      wx.showModal({
-        title: '云环境未配置',
-        content: '请确认已开通云开发，并检查 app.js 中的 env 环境ID是否与云开发控制台一致。',
-        showCancel: false,
-        confirmText: '知道了'
-      })
-      return
-    }
-
-    // 3. 权限不足
-    if (msg.includes('permission') || msg.includes('PERMISSION_DENIED') || errCode === -502003) {
-      wx.showModal({
-        title: '权限不足',
-        content: '请将 foods 集合权限设置为「所有用户可读，仅创建者可读写」。',
-        showCancel: false,
-        confirmText: '知道了'
-      })
-      return
-    }
-
-    // 4. 其他错误
     wx.showModal({
       title: '加载失败',
-      content: '请确认：① 云开发已开通；② foods 集合已创建；③ 网络正常。详情见控制台日志。',
+      content: '请确认：① 云开发已开通；② initDB 已运行（自动建集合）；③ 云函数已部署。详情见控制台日志。',
       showCancel: false,
       confirmText: '知道了'
     })
   },
 
   /**
-   * 点击菜品卡片，跳转到详情页
+   * 切换 我的菜谱 / 团队菜谱
    */
-  onTapFood(e) {
-    const { id } = e.currentTarget.dataset
-    wx.navigateTo({
-      url: `/pages/detail/detail?id=${id}`
-    })
+  onSwitchScope(e) {
+    const scope = e.currentTarget.dataset.scope
+    if (scope === this.data.scope) return
+    this.setData({ scope, foodList: [], loading: true })
+    this.refresh()
   },
 
   /**
-   * 点击添加按钮，跳转到添加菜品页
+   * 切换团队
+   */
+  onSelectTeam(e) {
+    const id = e.currentTarget.dataset.id
+    if (id === this.data.currentTeamId) return
+    this.setData({ currentTeamId: id, foodList: [], loading: true })
+    this.loadFoodList()
+  },
+
+  /**
+   * 进入团队管理页
+   */
+  onManageTeam() {
+    wx.navigateTo({ url: '/pages/team/team' })
+  },
+
+  /**
+   * 点击菜谱卡片 → 详情
+   */
+  onTapFood(e) {
+    const { id } = e.currentTarget.dataset
+    wx.navigateTo({ url: `/pages/detail/detail?id=${id}` })
+  },
+
+  /**
+   * 添加菜谱（个人 → 直接添加；团队 → 加入当前团队）
    */
   onTapAdd() {
-    wx.navigateTo({
-      url: '/pages/add/add'
-    })
+    const { scope, currentTeamId } = this.data
+    if (scope === 'team') {
+      if (!currentTeamId) {
+        wx.showToast({ title: '请先创建或加入团队', icon: 'none' })
+        return
+      }
+      wx.navigateTo({ url: `/pages/add/add?scope=team&teamId=${currentTeamId}` })
+    } else {
+      wx.navigateTo({ url: '/pages/add/add?scope=personal' })
+    }
   }
 })

@@ -24,23 +24,26 @@ Page({
   },
 
   /**
-   * 从云数据库加载菜品详情
+   * 通过 recipe 云函数加载菜谱详情（云端已做权限校验：
+   * 个人菜谱仅创建者可见，团队菜谱仅成员可见）
    */
   loadFoodDetail(id) {
-    const db = wx.cloud.database()
-
-    db.collection('foods')
-      .doc(id)
-      .get()
+    wx.cloud.callFunction({ name: 'recipe', data: { action: 'get', recipeId: id } })
       .then(res => {
-        const food = res.data
-        this.setData({ food })
-        wx.setNavigationBarTitle({ title: food.name })
+        if (res.result && res.result.success) {
+          const food = res.result.recipe
+          this.setData({ food })
+          wx.setNavigationBarTitle({ title: food.name })
+        } else {
+          const msg = (res.result && res.result.error) || '菜谱不存在'
+          wx.showToast({ title: msg, icon: 'none' })
+          setTimeout(() => wx.navigateBack(), 1200)
+        }
       })
       .catch(err => {
-        console.error('加载菜品详情失败', err)
-        wx.showToast({ title: '菜品不存在', icon: 'none' })
-        setTimeout(() => wx.navigateBack(), 1000)
+        console.error('加载菜谱详情失败', err)
+        wx.showToast({ title: '加载失败', icon: 'none' })
+        setTimeout(() => wx.navigateBack(), 1200)
       })
   },
 
@@ -158,7 +161,7 @@ Page({
   },
 
   /**
-   * 编辑菜品 → 跳转添加页（编辑模式）
+   * 编辑菜谱 → 跳转添加页（编辑模式）
    */
   onEdit() {
     wx.navigateTo({
@@ -167,7 +170,7 @@ Page({
   },
 
   /**
-   * 删除菜品：二次确认 → 删云存储图片 + 删数据库记录
+   * 删除菜谱：二次确认 → 删云存储图片 + recipe.delete 云函数
    */
   onDelete() {
     const food = this.data.food
@@ -190,7 +193,6 @@ Page({
    */
   doDelete() {
     const { foodId, food } = this.data
-    const db = wx.cloud.database()
     wx.showLoading({ title: '删除中...' })
 
     // 1. 删除云存储图片（失败不阻断流程）
@@ -204,30 +206,25 @@ Page({
         })
       : Promise.resolve()
 
-    // 2. 删除数据库记录
+    // 2. 删除数据库记录（recipe 云函数，云端校验权限）
     delImg
-      .then(() => db.collection('foods').doc(foodId).remove())
-      .then(() => {
+      .then(() => wx.cloud.callFunction({
+        name: 'recipe',
+        data: { action: 'delete', recipeId: foodId }
+      }))
+      .then(res => {
         wx.hideLoading()
-        wx.showToast({ title: '已删除', icon: 'success' })
-        setTimeout(() => wx.navigateBack(), 1000)
+        if (res.result && res.result.success) {
+          wx.showToast({ title: '已删除', icon: 'success' })
+          setTimeout(() => wx.navigateBack(), 1000)
+        } else {
+          wx.showToast({ title: (res.result && res.result.error) || '删除失败', icon: 'none' })
+        }
       })
       .catch(err => {
         wx.hideLoading()
         console.error('删除失败', err)
-        const msg = (err && (err.errMsg || err.message)) || ''
-        const errCode = err && err.errCode
-        if (msg.includes('permission') || msg.includes('PERMISSION_DENIED') || errCode === -502003) {
-          wx.showModal({
-            title: '权限不足',
-            content: '只能删除自己添加的菜品。系统示例菜品请在云开发控制台删除。',
-            showCancel: false,
-            confirmText: '知道了',
-            confirmColor: '#ff6b35'
-          })
-        } else {
-          wx.showToast({ title: '删除失败，请重试', icon: 'none' })
-        }
+        wx.showToast({ title: '删除失败，请重试', icon: 'none' })
       })
   }
 })

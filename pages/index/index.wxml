@@ -2,11 +2,43 @@
 <view class="container">
   <!-- 顶部标题区域 -->
   <view class="page-header">
-    <text class="page-title">今日菜单</text>
-    <text class="page-subtitle">共 {{foodList.length}} 道菜品</text>
+    <view class="header-row">
+      <view class="scope-tabs">
+        <view
+          class="scope-tab {{scope === 'personal' ? 'active' : ''}}"
+          data-scope="personal"
+          bindtap="onSwitchScope"
+        >我的菜谱</view>
+        <view
+          class="scope-tab {{scope === 'team' ? 'active' : ''}}"
+          data-scope="team"
+          bindtap="onSwitchScope"
+        >团队菜谱</view>
+      </view>
+      <view class="manage-btn" bindtap="onManageTeam">团队管理</view>
+    </view>
+    <text class="page-subtitle">
+      {{scope === 'personal' ? '仅自己可见' : (teamList.length ? '共 ' + foodList.length + ' 道菜品' : '')}}
+    </text>
   </view>
 
-  <!-- 菜品列表 -->
+  <!-- 团队选择器（团队模式） -->
+  <scroll-view wx:if="{{scope === 'team'}}" class="team-scroller" scroll-x enable-flex>
+    <view
+      class="team-chip {{currentTeamId === item._id ? 'active' : ''}}"
+      wx:for="{{teamList}}"
+      wx:key="_id"
+      data-id="{{item._id}}"
+      bindtap="onSelectTeam"
+    >
+      {{item.name}}<text class="team-chip-count">({{item.memberCount}})</text>
+    </view>
+    <view wx:if="{{teamList.length === 0}}" class="team-empty-hint" bindtap="onManageTeam">
+      还没有团队，去创建或加入 →
+    </view>
+  </scroll-view>
+
+  <!-- 菜谱列表 -->
   <block wx:if="{{foodList.length > 0}}">
     <view
       class="food-card-wrapper"
@@ -27,7 +59,9 @@
   <!-- 空状态 -->
   <view wx:elif="{{!loading}}" class="empty-state">
     <image class="empty-icon" src="/assets/empty-food.png" mode="aspectFit" />
-    <text class="empty-text">还没有菜品，点击下方 + 添加</text>
+    <text class="empty-text">
+      {{scope === 'team' && !currentTeamId ? '还没有团队，点右上角「团队管理」创建或加入' : '还没有菜谱，点击下方 + 添加'}}
+    </text>
   </view>
 
   <!-- 悬浮添加按钮 -->
