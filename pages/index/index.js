@@ -108,7 +108,7 @@ Page({
     if (msg.includes('FunctionName') || msg.includes('FUNCTION_NOT_FOUND') || msg.includes('-501000')) {
       wx.showModal({
         title: '云函数未部署',
-        content: '请先部署 user/recipe/team 云函数（右键云函数目录 → 上传并部署：云端安装依赖），并运行一次 initDB 初始化数据库。',
+        content: '请先部署 user/recipe/team 云函数（右键云函数目录 → 上传并部署：云端安装依赖）。云函数首次调用会自动建集合，但仍建议运行一次 initDB 完成旧数据迁移。',
         showCancel: false,
         confirmText: '知道了'
       })
@@ -116,7 +116,7 @@ Page({
     }
     wx.showModal({
       title: '加载失败',
-      content: '请确认：① 云开发已开通；② initDB 已运行（自动建集合）；③ 云函数已部署。详情见控制台日志。',
+      content: '请确认：① 云开发已开通；② 云函数已部署为最新代码；③ 重新编译后重试。详情见控制台日志。',
       showCancel: false,
       confirmText: '知道了'
     })

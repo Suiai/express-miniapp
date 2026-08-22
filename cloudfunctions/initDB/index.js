@@ -14,13 +14,18 @@ const COLLECTIONS = ['users', 'recipes', 'teams', 'teamMembers', 'orders']
 exports.main = async () => {
   const results = {}
 
-  // 1. 创建集合（已存在则跳过）
+  // 1. 创建集合（已存在则跳过，其他错误记录详情）
   for (const name of COLLECTIONS) {
     try {
       await db.createCollection(name)
-      results[name] = 'created'
+      results[name] = { status: 'created' }
     } catch (e) {
-      results[name] = 'exists'
+      const msg = e.errMsg || e.message || String(e)
+      if (msg.includes('exists') || msg.includes('已存在') || msg.includes('duplicate')) {
+        results[name] = { status: 'exists' }
+      } else {
+        results[name] = { status: 'error', error: msg }
+      }
     }
   }
 

@@ -29,11 +29,25 @@ async function canAccess(recipe, openid) {
   return recipe.ownerOpenid === openid
 }
 
+// 懒创建集合：若集合尚未初始化则自动创建（initDB 未执行时的兜底）
+async function ensureCollections() {
+  for (const name of ['recipes', 'teams', 'teamMembers']) {
+    try {
+      await db.createCollection(name)
+    } catch (e) {
+      // 已存在或其他错误均忽略
+    }
+  }
+}
+
 exports.main = async (event) => {
   const { OPENID } = cloud.getWXContext()
   const { action, scope, teamId, recipeId, data } = event
 
   try {
+    // 兜底：确保依赖集合存在（首次调用时自动创建）
+    await ensureCollections()
+
     // ========== 列表 ==========
     if (action === 'list') {
       let list = []
